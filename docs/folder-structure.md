@@ -1,0 +1,86 @@
+# Folder Structure
+
+## Frontend (Vue 3 CSR)
+```
+frontend/
+  src/
+    assets/
+    components/
+      CalendarPage.vue
+      LoginModal.vue
+      ReservationModal.vue
+    views/
+      SignupPage.vue
+      PortalActive.vue
+      PortalHistory.vue
+      BookingDetails.vue
+      AdminUsers.vue
+      AdminBookings.vue
+      AdminPayments.vue
+      AdminApprovals.vue
+      AdminBlocks.vue
+      AdminBookingEdit.vue
+    stores/
+      useAuthStore.ts
+      useCalendarStore.ts
+      useSelectionStore.ts
+      useBookingStore.ts
+      useAdminStore.ts
+    repositories/
+      AuthRepository.ts
+      CalendarRepository.ts
+      BookingRepository.ts
+      AdminRepository.ts
+    di/
+      RepositoryContainer.ts
+    router/
+      index.ts
+    main.ts
+```
+
+## Backend (Express MVC + TypeScript)
+```
+backend/
+  src/
+    routes/
+      authRoutes.ts
+      bookingRoutes.ts
+      adminRoutes.ts
+      calendarRoutes.ts
+      webhookRoutes.ts
+    controllers/
+      authController.ts
+      bookingController.ts
+      adminController.ts
+      calendarController.ts
+      webhookController.ts
+    services/
+      authService.ts
+      bookingService.ts
+      adminService.ts
+      paymentService.ts
+      otpService.ts
+    repositories/
+      userRepository.ts
+      bookingRepository.ts
+      paymentRepository.ts
+      blockRepository.ts
+      webhookRepository.ts
+    middleware/
+      requireAuth.ts
+      requireRole.ts
+      validate.ts
+      csrf.ts
+      errorHandler.ts
+    utils/
+      time.ts
+      bookingRules.ts
+      phone.ts
+      logger.ts
+    config/
+      session.ts
+      passport.ts
+      redis.ts
+      cors.ts
+    server.ts
+```
