@@ -1,31 +1,42 @@
 <template>
-  <div class="modal">
-    <div class="modal-content">
-      <h3>Login</h3>
-      <p>Select a login method to continue your reservation.</p>
-      <div class="toolbar">
-        <button class="primary" @click="googleLogin">Login with Google</button>
-        <button class="secondary" @click="mode = 'otp'">Login via OTP</button>
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60">
+    <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+      <h3 class="text-xl font-semibold">Login</h3>
+      <p class="mt-2 text-sm text-slate-600">Select a login method to continue your reservation.</p>
+      <div class="mt-4 flex gap-3">
+        <button class="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white" @click="googleLogin">
+          Login with Google
+        </button>
+        <button class="rounded-lg border border-slate-200 px-4 py-2 text-sm" @click="mode = 'otp'">
+          Login via OTP
+        </button>
       </div>
 
-      <div v-if="mode === 'otp'" style="margin-top: 16px">
-        <label>Phone Number</label>
-        <input v-model="phone" placeholder="+639..." />
-        <div class="toolbar" style="margin-top: 12px">
-          <button class="secondary" @click="requestOtp">Request OTP</button>
+      <div v-if="mode === 'otp'" class="mt-6 space-y-3">
+        <div>
+          <label class="text-sm font-medium text-slate-700">Phone Number</label>
+          <input v-model="phone" class="mt-1 w-full rounded-lg border border-slate-200 p-2" placeholder="+639..." />
         </div>
-        <div v-if="otpSent" style="margin-top: 12px">
-          <label>OTP</label>
-          <input v-model="otp" placeholder="Enter OTP" />
-          <button class="primary" style="margin-top: 12px" @click="verifyOtp">Verify</button>
+        <button class="rounded-lg border border-slate-200 px-4 py-2 text-sm" @click="requestOtp">Request OTP</button>
+        <div v-if="otpSent" class="space-y-3">
+          <div>
+            <label class="text-sm font-medium text-slate-700">OTP</label>
+            <input v-model="otp" class="mt-1 w-full rounded-lg border border-slate-200 p-2" placeholder="Enter OTP" />
+          </div>
+          <button class="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white" @click="verifyOtp">
+            Verify
+          </button>
         </div>
       </div>
 
-      <p style="margin-top: 16px">
-        Don't have an account? <a @click="goSignup">Sign up</a>
+      <p class="mt-6 text-sm text-slate-600">
+        Don't have an account?
+        <button class="font-semibold text-brand-500" @click="goSignup">Sign up</button>
       </p>
 
-      <button class="secondary" style="margin-top: 12px" @click="$emit('close')">Close</button>
+      <button class="mt-4 w-full rounded-lg border border-slate-200 px-4 py-2 text-sm" @click="$emit('close')">
+        Close
+      </button>
     </div>
   </div>
 </template>

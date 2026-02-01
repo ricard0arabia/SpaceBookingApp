@@ -1,15 +1,27 @@
 <template>
-  <div class="card">
-    <h2>My Active Booking</h2>
-    <div v-if="!booking">No active booking.</div>
-    <div v-else>
+  <div class="rounded-2xl bg-white p-6 shadow-sm">
+    <h2 class="text-2xl font-semibold">My Active Booking</h2>
+    <div v-if="!booking" class="mt-4 text-slate-600">No active booking.</div>
+    <div v-else class="mt-4 space-y-2 text-sm text-slate-700">
       <p><strong>Status:</strong> {{ booking.Status }}</p>
       <p><strong>Start:</strong> {{ booking.StartAt }}</p>
       <p><strong>End:</strong> {{ booking.EndAt }}</p>
-      <button v-if="booking.Status === 'APPROVED_AWAITING_PAYMENT'" class="primary" @click="pay">
-        Pay Now
-      </button>
-      <button v-if="canCancel" class="secondary" @click="cancel">Cancel</button>
+      <div class="mt-4 flex gap-3">
+        <button
+          v-if="booking.Status === 'APPROVED_AWAITING_PAYMENT'"
+          class="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
+          @click="pay"
+        >
+          Pay Now
+        </button>
+        <button
+          v-if="canCancel"
+          class="rounded-lg border border-slate-200 px-4 py-2 text-sm"
+          @click="cancel"
+        >
+          Cancel
+        </button>
+      </div>
     </div>
   </div>
 </template>

@@ -1,17 +1,21 @@
 <template>
-  <div class="modal">
-    <div class="modal-content">
-      <h3>Reservation Summary</h3>
-      <p><strong>Start:</strong> {{ selection.start }}</p>
-      <p><strong>End:</strong> {{ selection.end }}</p>
-      <p><strong>Duration:</strong> {{ durationHours }} hours</p>
-      <p><strong>Segment:</strong> {{ segment }}</p>
-      <p v-if="requiresApproval" style="color: #b45309">
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60">
+    <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+      <h3 class="text-xl font-semibold">Reservation Summary</h3>
+      <div class="mt-4 space-y-2 text-sm text-slate-700">
+        <p><strong>Start:</strong> {{ selection.start }}</p>
+        <p><strong>End:</strong> {{ selection.end }}</p>
+        <p><strong>Duration:</strong> {{ durationHours }} hours</p>
+        <p><strong>Segment:</strong> {{ segment }}</p>
+      </div>
+      <p v-if="requiresApproval" class="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
         Requires admin approval before payment.
       </p>
-      <div class="toolbar" style="margin-top: 12px">
-        <button class="primary" @click="submit">{{ actionLabel }}</button>
-        <button class="secondary" @click="$emit('close')">Close</button>
+      <div class="mt-6 flex gap-3">
+        <button class="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white" @click="submit">
+          {{ actionLabel }}
+        </button>
+        <button class="rounded-lg border border-slate-200 px-4 py-2 text-sm" @click="$emit('close')">Close</button>
       </div>
     </div>
   </div>

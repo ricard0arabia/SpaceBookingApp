@@ -1,18 +1,26 @@
 <template>
-  <div class="card">
-    <h2>OTP Sign-up</h2>
-    <label>Full Name</label>
-    <input v-model="fullName" placeholder="Full name" />
-    <label>Phone</label>
-    <input v-model="phone" placeholder="+639..." />
-    <div class="toolbar" style="margin-top: 12px">
-      <button class="secondary" @click="requestOtp">Send OTP</button>
+  <div class="mx-auto max-w-lg rounded-2xl bg-white p-6 shadow-sm">
+    <h2 class="text-2xl font-semibold">OTP Sign-up</h2>
+    <div class="mt-4 space-y-3">
+      <div>
+        <label class="text-sm font-medium text-slate-700">Full Name</label>
+        <input v-model="fullName" class="mt-1 w-full rounded-lg border border-slate-200 p-2" placeholder="Full name" />
+      </div>
+      <div>
+        <label class="text-sm font-medium text-slate-700">Phone</label>
+        <input v-model="phone" class="mt-1 w-full rounded-lg border border-slate-200 p-2" placeholder="+639..." />
+      </div>
+      <button class="rounded-lg border border-slate-200 px-4 py-2 text-sm" @click="requestOtp">Send OTP</button>
     </div>
 
-    <div v-if="otpSent" style="margin-top: 12px">
-      <label>OTP</label>
-      <input v-model="otp" placeholder="Enter OTP" />
-      <button class="primary" style="margin-top: 12px" @click="verifyOtp">Verify</button>
+    <div v-if="otpSent" class="mt-6 space-y-3">
+      <div>
+        <label class="text-sm font-medium text-slate-700">OTP</label>
+        <input v-model="otp" class="mt-1 w-full rounded-lg border border-slate-200 p-2" placeholder="Enter OTP" />
+      </div>
+      <button class="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white" @click="verifyOtp">
+        Verify
+      </button>
     </div>
   </div>
 </template>

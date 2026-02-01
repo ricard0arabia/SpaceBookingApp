@@ -1,8 +1,8 @@
 <template>
-  <div class="card">
-    <h2>Booking Details</h2>
-    <div v-if="!booking">Loading...</div>
-    <div v-else>
+  <div class="rounded-2xl bg-white p-6 shadow-sm">
+    <h2 class="text-2xl font-semibold">Booking Details</h2>
+    <div v-if="!booking" class="mt-4 text-slate-600">Loading...</div>
+    <div v-else class="mt-4 space-y-2 text-sm text-slate-700">
       <p><strong>Status:</strong> {{ booking.Status }}</p>
       <p><strong>Start:</strong> {{ booking.StartAt }}</p>
       <p><strong>End:</strong> {{ booking.EndAt }}</p>
