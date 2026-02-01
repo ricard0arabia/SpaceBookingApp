@@ -1,14 +1,10 @@
 import session from "express-session";
-import connectRedis from "connect-redis";
+import RedisStore from "connect-redis";
 import { redis } from "./redis.js";
 import { logger } from "../utils/logger.js";
 
-const RedisStore = connectRedis(session);
-
 export const sessionMiddleware = session({
-  store: redis
-    ? new RedisStore({ client: redis })
-    : new session.MemoryStore(),
+  store: redis ? new RedisStore({ client: redis }) : new session.MemoryStore(),
   secret: process.env.SESSION_SECRET ?? "dev-secret",
   resave: false,
   saveUninitialized: false,
