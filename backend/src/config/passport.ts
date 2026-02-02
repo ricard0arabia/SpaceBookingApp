@@ -3,7 +3,7 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { userRepository } from "../repositories/userRepository.js";
 
 passport.serializeUser((user, done) => {
-  done(null, (user as { userId: number }).userId);
+  done(null, (user as { UserId: number }).UserId);
 });
 
 passport.deserializeUser(async (id: number, done) => {
