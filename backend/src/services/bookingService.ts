@@ -9,6 +9,8 @@ import {
   validateOperatingHours
 } from "../utils/bookingRules.js";
 import { TIME_ZONE, toManila, toUtcJs } from "../utils/time.js";
+import { emitBookingEvent } from "../socket/emitter.js";
+import { acquireLock, releaseLock } from "../utils/lock.js";
 
 const HOLD_MINUTES = 15;
 const PRICE_PER_HOUR = Number(process.env.PRICE_PER_HOUR ?? 500);
@@ -22,6 +24,9 @@ const buildSlots = (start: DateTime, end: DateTime) => {
   }
   return slots;
 };
+
+const lockKey = (start: DateTime, end: DateTime) =>
+  `lock:court:1:${start.toISO()}-${end.toISO()}`;
 
 export const createBooking = async ({
   userId,
@@ -54,6 +59,11 @@ export const createBooking = async ({
     throw new Error("Selected time conflicts with existing bookings or blocks");
   }
 
+  const lock = await acquireLock(lockKey(start, end), 60);
+  if (!lock.ok) {
+    throw new Error("Selected time is temporarily locked");
+  }
+
   const holdExpiresAt = DateTime.now().setZone(TIME_ZONE).plus({ minutes: HOLD_MINUTES });
   const status = needsApproval ? "PENDING_APPROVAL" : "HELD";
 
@@ -67,8 +77,10 @@ export const createBooking = async ({
     needsApproval,
     slotStarts: buildSlots(start, end)
   });
+  await releaseLock(lockKey(start, end), lock.token);
 
   if (needsApproval) {
+    emitBookingEvent("booking:created", { bookingId, status });
     return { bookingId, status, needsApproval, segment: getSegment(start, end) };
   }
 
@@ -81,6 +93,7 @@ export const createBooking = async ({
   });
   await bookingRepository.updateStatus(bookingId, "PENDING_PAYMENT", toUtcJs(holdExpiresAt));
   await bookingRepository.updateSlotsStatus(bookingId, "PENDING_PAYMENT");
+  emitBookingEvent("booking:updated", { bookingId, status: "PENDING_PAYMENT" });
 
   return { bookingId, status: "PENDING_PAYMENT", checkoutUrl, needsApproval: false };
 };
@@ -109,6 +122,7 @@ export const payApprovedBooking = async ({
   });
   await bookingRepository.updateStatus(bookingId, "PENDING_PAYMENT", toUtcJs(holdExpiresAt));
   await bookingRepository.updateSlotsStatus(bookingId, "PENDING_PAYMENT");
+  emitBookingEvent("booking:updated", { bookingId, status: "PENDING_PAYMENT" });
   return checkoutUrl;
 };
 
@@ -126,5 +140,6 @@ export const cancelBooking = async (bookingId: number, userId: number) => {
   }
   await bookingRepository.updateStatus(bookingId, "CANCELLED", null);
   await bookingRepository.releaseSlots(bookingId);
+  emitBookingEvent("booking:cancelled", { bookingId });
   return true;
 };

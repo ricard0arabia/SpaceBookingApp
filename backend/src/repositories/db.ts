@@ -12,7 +12,8 @@ const config: ConnectionConfig = {
   options: {
     database: process.env.DB_NAME ?? "SpaceBooking",
     encrypt: true,
-    trustServerCertificate: true
+    trustServerCertificate: true,
+    instanceName: process.env.DB_INSTANCE
   }
 };
 

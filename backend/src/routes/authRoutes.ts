@@ -2,6 +2,7 @@ import { Router } from "express";
 import passport from "../config/passport.js";
 import { getMe, logout, otpLoginRequest, otpLoginVerify, otpSignupRequest, otpSignupVerify } from "../controllers/authController.js";
 import { ensureCsrfToken, requireCsrf } from "../middleware/csrf.js";
+import { otpRateLimiter } from "../middleware/rateLimiters.js";
 
 export const authRoutes = Router();
 
@@ -19,10 +20,10 @@ authRoutes.get(
   }
 );
 
-authRoutes.post("/auth/otp/signup/request", requireCsrf, otpSignupRequest);
+authRoutes.post("/auth/otp/signup/request", requireCsrf, otpRateLimiter, otpSignupRequest);
 
-authRoutes.post("/auth/otp/signup/verify", requireCsrf, otpSignupVerify);
+authRoutes.post("/auth/otp/signup/verify", requireCsrf, otpRateLimiter, otpSignupVerify);
 
-authRoutes.post("/auth/otp/login/request", requireCsrf, otpLoginRequest);
+authRoutes.post("/auth/otp/login/request", requireCsrf, otpRateLimiter, otpLoginRequest);
 
-authRoutes.post("/auth/otp/login/verify", requireCsrf, otpLoginVerify);
+authRoutes.post("/auth/otp/login/verify", requireCsrf, otpRateLimiter, otpLoginVerify);

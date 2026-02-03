@@ -1,6 +1,7 @@
 import "dotenv/config";
 import "express-async-errors";
 import express from "express";
+import { createServer } from "http";
 import helmet from "helmet";
 import compression from "compression";
 import cors from "cors";
@@ -13,13 +14,24 @@ import { bookingRoutes } from "./routes/bookingRoutes.js";
 import { adminRoutes } from "./routes/adminRoutes.js";
 import { calendarRoutes } from "./routes/calendarRoutes.js";
 import { webhookRoutes } from "./routes/webhookRoutes.js";
+import { healthRoutes } from "./routes/healthRoutes.js";
+import { metricsRoutes } from "./routes/metricsRoutes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { logger } from "./utils/logger.js";
 import pinoHttp from "pino-http";
+import { initSocketServer } from "./socket/server.js";
+import { registerRepeatableJobs } from "./queues/index.js";
+import crypto from "crypto";
 
 const app = express();
+const httpServer = createServer(app);
 
-app.use(pinoHttp({ logger }));
+app.use(
+  pinoHttp({
+    logger,
+    genReqId: (req) => req.headers["x-request-id"]?.toString() ?? crypto.randomUUID()
+  })
+);
 app.use(helmet());
 app.use(cors(corsOptions));
 app.use(compression());
@@ -41,10 +53,15 @@ app.use(authRoutes);
 app.use(bookingRoutes);
 app.use(adminRoutes);
 app.use(webhookRoutes);
+app.use(healthRoutes);
+app.use(metricsRoutes);
 
 app.use(errorHandler);
 
 const port = Number(process.env.PORT ?? 4000);
-app.listen(port, () => {
+initSocketServer(httpServer);
+void registerRepeatableJobs();
+
+httpServer.listen(port, () => {
   logger.info(`API listening on ${port}`);
 });

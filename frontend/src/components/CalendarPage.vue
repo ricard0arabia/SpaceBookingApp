@@ -49,6 +49,7 @@ import { useCalendarStore } from "../stores/useCalendarStore";
 import { useSelectionStore } from "../stores/useSelectionStore";
 import { useAuthStore } from "../stores/useAuthStore";
 import courtImage from "../assets/court.svg";
+import { io } from "socket.io-client";
 
 const calendarStore = useCalendarStore();
 const selectionStore = useSelectionStore();
@@ -56,6 +57,10 @@ const authStore = useAuthStore();
 const calendarRef = ref();
 const showLogin = ref(false);
 const route = useRoute();
+const socket = io(import.meta.env.VITE_API_URL ?? "http://localhost:4000", {
+  withCredentials: true
+});
+const currentRoom = ref<string | null>(null);
 
 const applySelection = () => {
   if (!selectionStore.pendingSelection) {
@@ -104,6 +109,16 @@ const calendarOptions = {
       handleSelect({ startStr: start, endStr: end, view: info.view });
     }
   },
+  datesSet: (info: any) => {
+    const day = info.startStr.split("T")[0];
+    const room = `room:court:1:${day}`;
+    if (currentRoom.value && currentRoom.value !== room) {
+      socket.emit("calendar:leave", currentRoom.value);
+    }
+    currentRoom.value = room;
+    socket.emit("calendar:join", room);
+    socket.emit("calendar:join", "room:court:1");
+  },
   events: async (info: any, successCallback: any) => {
     await calendarStore.fetchEvents(info.startStr, info.endStr);
     const events = [
@@ -137,6 +152,13 @@ onMounted(async () => {
   if (route.query.login === "1") {
     showLogin.value = true;
   }
+  socket.on("booking:created", () => calendarRef.value?.getApi()?.refetchEvents());
+  socket.on("booking:updated", () => calendarRef.value?.getApi()?.refetchEvents());
+  socket.on("booking:cancelled", () => calendarRef.value?.getApi()?.refetchEvents());
+  socket.on("booking:expired", () => calendarRef.value?.getApi()?.refetchEvents());
+  socket.on("booking:confirmed", () => calendarRef.value?.getApi()?.refetchEvents());
+  socket.on("block:created", () => calendarRef.value?.getApi()?.refetchEvents());
+  socket.on("block:deleted", () => calendarRef.value?.getApi()?.refetchEvents());
 });
 
 watch(
@@ -158,4 +180,5 @@ watch(
     }
   }
 );
+
 </script>

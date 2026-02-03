@@ -241,6 +241,41 @@ const listBlocks = async (start: Date, end: Date) =>
     ]
   );
 
+const expireHolds = async () => {
+  const rows = await execute<{ BookingId: number }>(
+    `UPDATE Bookings
+     SET Status = 'EXPIRED', HoldExpiresAt = NULL, UpdatedAt = SYSUTCDATETIME()
+     OUTPUT INSERTED.BookingId
+     WHERE Status IN ('HELD','PENDING_PAYMENT')
+     AND HoldExpiresAt IS NOT NULL
+     AND HoldExpiresAt < SYSUTCDATETIME()`
+  );
+  for (const row of rows) {
+    await releaseSlots(row.BookingId);
+  }
+  return rows.map((row) => row.BookingId);
+};
+
+const completeBookings = async () => {
+  const rows = await execute<{ BookingId: number }>(
+    `UPDATE Bookings
+     SET Status = 'COMPLETED', UpdatedAt = SYSUTCDATETIME()
+     OUTPUT INSERTED.BookingId
+     WHERE Status = 'CONFIRMED'
+     AND EndAt < SYSUTCDATETIME()`
+  );
+  return rows.map((row) => row.BookingId);
+};
+
+const cleanupStaleRequests = async () =>
+  execute(
+    `UPDATE BookingChangeRequests
+     SET Status = 'EXPIRED', UpdatedAt = SYSUTCDATETIME()
+     WHERE Status IN ('PENDING_APPROVAL','PENDING_PAYMENT')
+     AND HoldExpiresAt IS NOT NULL
+     AND HoldExpiresAt < SYSUTCDATETIME()`
+  );
+
 export const bookingRepository = {
   createBooking,
   getActiveByUser,
@@ -252,5 +287,8 @@ export const bookingRepository = {
   updateSlotsStatus,
   updateBookingTimes,
   listCalendarEvents,
-  listBlocks
+  listBlocks,
+  expireHolds,
+  completeBookings,
+  cleanupStaleRequests
 };

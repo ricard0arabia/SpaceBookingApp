@@ -2,15 +2,18 @@ import { bookingRepository } from "../repositories/bookingRepository.js";
 import { blockRepository } from "../repositories/blockRepository.js";
 import { toUtcJs, toManila } from "../utils/time.js";
 import { validateOperatingHours, validateDuration } from "../utils/bookingRules.js";
+import { emitBlockEvent, emitBookingEvent } from "../socket/emitter.js";
 
 export const approveBooking = async (bookingId: number) => {
   await bookingRepository.updateStatus(bookingId, "APPROVED_AWAITING_PAYMENT", null);
   await bookingRepository.updateSlotsStatus(bookingId, "APPROVED_AWAITING_PAYMENT");
+  emitBookingEvent("booking:updated", { bookingId, status: "APPROVED_AWAITING_PAYMENT" });
 };
 
 export const denyBooking = async (bookingId: number) => {
   await bookingRepository.updateStatus(bookingId, "DENIED", null);
   await bookingRepository.releaseSlots(bookingId);
+  emitBookingEvent("booking:updated", { bookingId, status: "DENIED" });
 };
 
 export const createBlock = async ({
@@ -28,12 +31,14 @@ export const createBlock = async ({
   const end = toManila(endAt);
   validateOperatingHours(start, end);
   validateDuration(start, end);
-  return blockRepository.createBlock({
+  const result = await blockRepository.createBlock({
     startAt: toUtcJs(start),
     endAt: toUtcJs(end),
     reason,
     adminId
   });
+  emitBlockEvent("block:created", { startAt, endAt, reason });
+  return result;
 };
 
 export const listBlocks = () => blockRepository.listBlocks();
@@ -84,5 +89,6 @@ export const editBookingTime = async ({
     actorRole: "Admin",
     reason
   });
+  emitBookingEvent("booking:updated", { bookingId, status: "CONFIRMED" });
   return { bookingId };
 };
