@@ -1,4 +1,4 @@
-import { Queue, QueueScheduler } from "bullmq";
+import { Queue } from "bullmq";
 import { createRedisConnection } from "../config/redis.js";
 import { logger } from "../utils/logger.js";
 
@@ -25,16 +25,6 @@ export const queues = {
   reconciliation: createQueue("reconciliation"),
   cleanup: createQueue("cleanup")
 };
-
-export const schedulers = connection
-  ? [
-      new QueueScheduler("webhooks", { connection }),
-      new QueueScheduler("expiry", { connection }),
-      new QueueScheduler("notifications", { connection }),
-      new QueueScheduler("reconciliation", { connection }),
-      new QueueScheduler("cleanup", { connection })
-    ]
-  : [];
 
 export const registerRepeatableJobs = async () => {
   if (!queues.expiry || !queues.reconciliation || !queues.cleanup) {
