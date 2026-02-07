@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900;
+  }
+}
+
+@layer components {
+  .event-confirmed {
+    @apply bg-rose-500 border-rose-500 text-white;
+  }
+
+  .event-tentative {
+    @apply bg-amber-400 border-amber-400 text-slate-900 opacity-70;
+  }
+
+  .event-block {
+    @apply bg-slate-900/10;
+  }
+}
