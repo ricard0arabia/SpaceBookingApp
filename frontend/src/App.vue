@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-slate-50">
-    <header class="bg-brand-900 text-white">
+    <header class="bg-matcha text-white">
       <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <div class="text-lg font-semibold">Hoops Court Booking</div>
         <div class="flex items-center gap-3">

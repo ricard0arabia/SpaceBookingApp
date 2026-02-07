@@ -48,7 +48,7 @@ import ReservationModal from "./ReservationModal.vue";
 import { useCalendarStore } from "../stores/useCalendarStore";
 import { useSelectionStore } from "../stores/useSelectionStore";
 import { useAuthStore } from "../stores/useAuthStore";
-import courtImage from "../assets/court.svg";
+import courtImage from "../assets/court.png";
 import { io } from "socket.io-client";
 
 const calendarStore = useCalendarStore();
@@ -182,3 +182,17 @@ watch(
 );
 
 </script>
+<style scoped>
+/* Target the primary buttons, e.g., 'prev,next today' */
+:deep(.fc .fc-button-primary) {
+  background-color: #A1B500 !important; /* Example background color */
+  border-color: #A1B500 !important;     /* Example border color */
+  color: #FFFFFF !important;             /* Example text color */
+
+  /* Sizing adjustments */
+  padding: 6px 8px !important;    /* Controls the inner spacing/thickness */
+  font-size: 0.9em !important;     /* Controls the text and icon size */
+  line-height: 1.2 !important;     /* Adjusts vertical alignment */
+  height: auto !important;         /* Allows padding to define height */
+}
+</style>
