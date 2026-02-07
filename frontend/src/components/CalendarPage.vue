@@ -62,6 +62,24 @@ const socket = io(import.meta.env.VITE_API_URL ?? "http://localhost:4000", {
 });
 const currentRoom = ref<string | null>(null);
 
+
+const restoreCalendarViewport = () => {
+  if (!selectionStore.pendingSelection) {
+    return;
+  }
+  const api = calendarRef.value?.getApi?.();
+  if (!api) {
+    return;
+  }
+  const targetDate = selectionStore.pendingSelection.start;
+  const targetView = selectionStore.pendingSelection.viewType;
+  if (targetView && api.view?.type !== targetView) {
+    api.changeView(targetView, targetDate);
+  } else {
+    api.gotoDate(targetDate);
+  }
+};
+
 const applySelection = () => {
   if (!selectionStore.pendingSelection) {
     return;
@@ -145,6 +163,7 @@ const calendarOptions = {
 onMounted(async () => {
   selectionStore.hydrate();
   await authStore.hydrate();
+  restoreCalendarViewport();
   applySelection();
   if (authStore.isAuthenticated && selectionStore.pendingSelection) {
     selectionStore.modalOpen = true;
@@ -165,6 +184,7 @@ watch(
   () => authStore.isAuthenticated,
   (value) => {
     if (value && selectionStore.pendingSelection) {
+      restoreCalendarViewport();
       applySelection();
       selectionStore.modalOpen = true;
       showLogin.value = false;
