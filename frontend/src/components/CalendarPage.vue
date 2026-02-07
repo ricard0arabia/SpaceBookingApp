@@ -1,9 +1,9 @@
 <template>
   <div class="grid gap-8 lg:grid-cols-2">
     <section class="space-y-6">
-      <div class="rounded-2xl bg-white p-6 shadow-sm">
-        <h2 class="text-2xl font-semibold text-slate-900">Reserve the Basketball Court</h2>
-        <p class="mt-2 text-slate-600">
+      <div class="rounded-2xl border border-white/30 bg-black/35 p-6 text-white shadow-xl backdrop-blur-sm">
+        <h2 class="text-2xl font-semibold text-white">Reserve the Basketball Court</h2>
+        <p class="mt-2 text-slate-100/90">
           Book your preferred slot at our premium indoor basketball court. Enjoy professional flooring, LED
           lighting, and full amenities for teams or casual games.
         </p>
@@ -12,9 +12,9 @@
         </div>
       </div>
 
-      <div class="rounded-2xl bg-white p-6 shadow-sm">
+      <div class="rounded-2xl border border-white/30 bg-black/35 p-6 text-white shadow-xl backdrop-blur-sm">
         <h3 class="text-lg font-semibold">Court Rules</h3>
-        <ul class="mt-3 space-y-2 text-sm text-slate-600">
+        <ul class="mt-3 space-y-2 text-sm text-slate-100/90">
           <li>Operating hours: 9:00 AM – 10:00 PM (Asia/Manila).</li>
           <li>1-hour increments only. Whole-day bookings are 9 AM – 10 PM.</li>
           <li>Evening bookings can be same-day with 3-hour lead time.</li>
@@ -24,7 +24,7 @@
       </div>
     </section>
 
-    <section class="rounded-2xl bg-white p-4 shadow-sm">
+    <section class="rounded-2xl border border-white/30 bg-white/90 p-4 shadow-2xl">
       <FullCalendar ref="calendarRef" :options="calendarOptions" />
     </section>
   </div>
@@ -48,7 +48,7 @@ import ReservationModal from "./ReservationModal.vue";
 import { useCalendarStore } from "../stores/useCalendarStore";
 import { useSelectionStore } from "../stores/useSelectionStore";
 import { useAuthStore } from "../stores/useAuthStore";
-import courtImage from "../assets/court.png";
+import courtImage from "../assets/court.svg";
 import { io } from "socket.io-client";
 
 const calendarStore = useCalendarStore();
@@ -182,17 +182,3 @@ watch(
 );
 
 </script>
-<style scoped>
-/* Target the primary buttons, e.g., 'prev,next today' */
-:deep(.fc .fc-button-primary) {
-  background-color: #A1B500 !important; /* Example background color */
-  border-color: #A1B500 !important;     /* Example border color */
-  color: #FFFFFF !important;             /* Example text color */
-
-  /* Sizing adjustments */
-  padding: 6px 8px !important;    /* Controls the inner spacing/thickness */
-  font-size: 0.9em !important;     /* Controls the text and icon size */
-  line-height: 1.2 !important;     /* Adjusts vertical alignment */
-  height: auto !important;         /* Allows padding to define height */
-}
-</style>
