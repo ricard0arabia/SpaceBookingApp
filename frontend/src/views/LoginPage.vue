@@ -12,7 +12,10 @@
       </div>
       <button class="w-full rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white" @click="submitLocalLogin">Login</button>
       <button class="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm" @click="googleLogin">Continue with Google</button>
-      <button class="w-full text-sm text-brand-600" @click="router.push('/forgot-password')">Forgot password?</button>
+      <div class="flex items-center justify-between text-sm">
+        <button class="text-brand-600" @click="router.push('/signup')">Create account</button>
+        <button class="text-brand-600" @click="router.push('/forgot-password')">Forgot password?</button>
+      </div>
     </div>
   </div>
 </template>
