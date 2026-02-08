@@ -6,14 +6,22 @@ import { logger } from "../utils/logger.js";
 const redisReady = Boolean(redis && redis.status === "ready");
 
 export const sessionMiddleware = session({
-  store: redisReady ? new RedisStore({ client: redis }) : new session.MemoryStore(),
+  store: redisReady
+    ? new RedisStore({
+        client: redis,
+        prefix: process.env.REDIS_SESSION_PREFIX ?? "sess:"
+      })
+    : new session.MemoryStore(),
   secret: process.env.SESSION_SECRET ?? "dev-secret",
+  name: process.env.SESSION_COOKIE_NAME ?? "space.sid",
   resave: false,
   saveUninitialized: false,
+  rolling: true,
   cookie: {
     httpOnly: true,
-    sameSite: process.env.SAME_SITE ?? "lax",
-    secure: process.env.NODE_ENV === "production"
+    sameSite: (process.env.SAME_SITE as "lax" | "strict" | "none" | undefined) ?? "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: Number(process.env.SESSION_TTL_MS ?? 86_400_000)
   }
 });
 

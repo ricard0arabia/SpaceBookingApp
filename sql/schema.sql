@@ -2,13 +2,20 @@
 
 CREATE TABLE Users (
   UserId INT IDENTITY(1,1) PRIMARY KEY,
-  FullName NVARCHAR(200) NOT NULL,
-  Email NVARCHAR(320) NULL,
+  Username NVARCHAR(64) NULL,
+  PasswordHash NVARCHAR(500) NULL,
   Phone NVARCHAR(32) NULL,
+  PhoneVerifiedAt DATETIME2 NULL,
+  Email NVARCHAR(320) NULL,
   Role NVARCHAR(20) NOT NULL,
+  MustChangePassword BIT NOT NULL DEFAULT 0,
   CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
   UpdatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
 );
+
+CREATE UNIQUE INDEX UX_Users_Username
+  ON Users(Username)
+  WHERE Username IS NOT NULL;
 
 CREATE UNIQUE INDEX UX_Users_Phone
   ON Users(Phone)
@@ -25,6 +32,15 @@ CREATE TABLE AuthProviders (
 
 CREATE UNIQUE INDEX UX_AuthProviders_Provider
   ON AuthProviders(ProviderType, ProviderSubject);
+
+CREATE TABLE AccountEvents (
+  EventId INT IDENTITY(1,1) PRIMARY KEY,
+  UserId INT NOT NULL,
+  Type NVARCHAR(60) NOT NULL,
+  MetadataJson NVARCHAR(MAX) NULL,
+  CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+  CONSTRAINT FK_AccountEvents_UserId FOREIGN KEY (UserId) REFERENCES Users(UserId)
+);
 
 CREATE TABLE Bookings (
   BookingId INT IDENTITY(1,1) PRIMARY KEY,

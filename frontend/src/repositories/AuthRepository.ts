@@ -2,10 +2,11 @@ import { httpClient } from "./httpClient";
 
 export type User = {
   UserId: number;
-  FullName: string;
-  Email?: string | null;
-  Phone?: string | null;
+  Username: string | null;
+  Phone: string | null;
+  Email: string | null;
   Role: "Client" | "Admin";
+  MustChangePassword: boolean;
 };
 
 export const AuthRepository = {
@@ -19,20 +20,27 @@ export const AuthRepository = {
   startGoogleOAuth() {
     window.location.href = `${import.meta.env.VITE_API_URL ?? "http://localhost:4000"}/auth/google`;
   },
-  async otpSignupRequest(fullName: string, phone: string) {
-    const { data } = await httpClient.post("/auth/otp/signup/request", { fullName, phone });
-    return data;
-  },
-  async otpSignupVerify(fullName: string, phone: string, otp: string) {
-    const { data } = await httpClient.post("/auth/otp/signup/verify", { fullName, phone, otp });
+  async localLogin(username: string, password: string) {
+    const { data } = await httpClient.post("/auth/local/login", { username, password });
     return data.user as User;
   },
-  async otpLoginRequest(phone: string) {
-    const { data } = await httpClient.post("/auth/otp/login/request", { phone });
-    return data;
+  async localSignupComplete(payload: { username: string; password: string; firebaseIdToken: string }) {
+    const { data } = await httpClient.post("/auth/local/signup/complete", payload);
+    return data.user as User;
   },
-  async otpLoginVerify(phone: string, otp: string) {
-    const { data } = await httpClient.post("/auth/otp/login/verify", { phone, otp });
+  async recoveryStart(firebaseIdToken: string) {
+    const { data } = await httpClient.post("/auth/local/recovery/start", { firebaseIdToken });
+    return data as { ok: boolean; message: string };
+  },
+  async recoveryComplete(newPassword: string) {
+    const { data } = await httpClient.post("/auth/local/recovery/complete", { newPassword });
+    return data.user as User;
+  },
+  async changePassword(currentPassword: string, newPassword: string) {
+    await httpClient.post("/api/settings/password/change", { currentPassword, newPassword });
+  },
+  async changePhone(currentPassword: string, firebaseIdToken: string) {
+    const { data } = await httpClient.post("/api/settings/phone/change", { currentPassword, firebaseIdToken });
     return data.user as User;
   }
 };

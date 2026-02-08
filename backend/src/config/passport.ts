@@ -25,9 +25,8 @@ passport.use(
     async (_accessToken, _refreshToken, profile, done) => {
       try {
         const user = await userRepository.findOrCreateGoogleUser({
-          googleId: profile.id,
-          email: profile.emails?.[0]?.value ?? null,
-          name: profile.displayName
+          googleSubject: profile.id,
+          email: profile.emails?.[0]?.value ?? null
         });
         done(null, user);
       } catch (error) {

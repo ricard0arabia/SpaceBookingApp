@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getFirebaseAppCheckToken } from "../config/appCheck";
 
 export const httpClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:4000",
@@ -6,6 +7,7 @@ export const httpClient = axios.create({
 });
 
 const CSRF_HEADER = "x-csrf-token";
+const APP_CHECK_HEADER = "x-firebase-appcheck";
 
 const setCsrfToken = (token: string) => {
   httpClient.defaults.headers.common[CSRF_HEADER] = token;
@@ -21,6 +23,14 @@ const bootstrapCsrf = () => {
 
 bootstrapCsrf();
 
+httpClient.interceptors.request.use(async (config) => {
+  const appCheckToken = await getFirebaseAppCheckToken();
+  if (appCheckToken) {
+    config.headers[APP_CHECK_HEADER] = appCheckToken;
+  }
+  return config;
+});
+
 httpClient.interceptors.response.use(
   (response) => {
     const token = response.headers[CSRF_HEADER];
@@ -29,7 +39,5 @@ httpClient.interceptors.response.use(
     }
     return response;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
