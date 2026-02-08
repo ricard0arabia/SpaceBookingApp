@@ -113,10 +113,17 @@ export const settingsPhoneChange = async (req: Request, res: Response) => {
 
 export const beginGoogleAuth = (req: Request, res: Response, next: NextFunction) => {
   req.session.oauthState = crypto.randomBytes(24).toString("hex");
-  passport.authenticate("google", {
-    scope: ["profile", "email"],
-    state: req.session.oauthState
-  })(req, res, next);
+  req.session.save((sessionError) => {
+    if (sessionError) {
+      next(sessionError);
+      return;
+    }
+
+    passport.authenticate("google", {
+      scope: ["profile", "email"],
+      state: req.session.oauthState
+    })(req, res, next);
+  });
 };
 
 export const googleCallback = (req: Request, res: Response, next: NextFunction) => {
@@ -128,10 +135,34 @@ export const googleCallback = (req: Request, res: Response, next: NextFunction) 
     return;
   }
 
-  passport.authenticate("google", { failureRedirect: "/login" })(req, res, () => {
-    req.session.oauthState = undefined;
-    const target = new URL(process.env.OAUTH_SUCCESS_REDIRECT ?? "http://localhost:5173/");
-    target.searchParams.set("oauth", "1");
-    res.redirect(target.toString());
-  });
+  passport.authenticate("google", { failureRedirect: "/login", session: false }, (authError: unknown, user: Express.User | false | null) => {
+    if (authError) {
+      next(authError as never);
+      return;
+    }
+
+    if (!user) {
+      res.redirect("/login");
+      return;
+    }
+
+    req.login(user, (loginError) => {
+      if (loginError) {
+        next(loginError as never);
+        return;
+      }
+
+      req.session.oauthState = undefined;
+      req.session.save((sessionError) => {
+        if (sessionError) {
+          next(sessionError as never);
+          return;
+        }
+
+        const target = new URL(process.env.OAUTH_SUCCESS_REDIRECT ?? "http://localhost:5173/");
+        target.searchParams.set("oauth", "1");
+        res.redirect(target.toString());
+      });
+    });
+  })(req, res, next);
 };
