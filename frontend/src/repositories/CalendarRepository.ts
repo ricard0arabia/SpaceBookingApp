@@ -17,7 +17,7 @@ export type CalendarBlock = {
 export const CalendarRepository = {
   async getCalendarEvents(start: string, end: string) {
     const { data } = await httpClient.get<{ bookings: CalendarBooking[]; blocks: CalendarBlock[] }>(
-      "/api/calendar/events",
+      "/calendar/events",
       { params: { start, end } }
     );
     return data;
