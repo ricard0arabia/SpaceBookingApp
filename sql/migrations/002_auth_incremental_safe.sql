@@ -129,32 +129,47 @@ BEGIN TRY
   END
 
   -- 8) Ensure each user with Username has a local provider row
+  -- Dynamic SQL avoids compile-time invalid-column errors when Username is absent in legacy schemas.
   IF OBJECT_ID('dbo.AuthProviders', 'U') IS NOT NULL
+     AND COL_LENGTH('dbo.Users', 'Username') IS NOT NULL
   BEGIN
-    INSERT INTO dbo.AuthProviders (UserId, ProviderType, ProviderSubject)
-    SELECT u.UserId, 'local', u.Username
-    FROM dbo.Users u
-    WHERE u.Username IS NOT NULL
-      AND NOT EXISTS (
-        SELECT 1
-        FROM dbo.AuthProviders ap
-        WHERE ap.ProviderType = 'local'
-          AND ap.ProviderSubject = u.Username
-      );
+    DECLARE @InsertLocalProviderSql NVARCHAR(MAX) = N'
+      INSERT INTO dbo.AuthProviders (UserId, ProviderType, ProviderSubject)
+      SELECT u.UserId, ''local'', u.Username
+      FROM dbo.Users u
+      WHERE u.Username IS NOT NULL
+        AND NOT EXISTS (
+          SELECT 1
+          FROM dbo.AuthProviders ap
+          WHERE ap.ProviderType = ''local''
+            AND ap.ProviderSubject = u.Username
+        );';
+
+    EXEC sys.sp_executesql @InsertLocalProviderSql;
   END
 
   -- 9) Unique indexes (only create when no duplicates)
-  IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'UX_Users_Username' AND object_id = OBJECT_ID('dbo.Users'))
+  IF COL_LENGTH('dbo.Users', 'Username') IS NOT NULL
+     AND NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'UX_Users_Username' AND object_id = OBJECT_ID('dbo.Users'))
   BEGIN
-    IF NOT EXISTS (
-      SELECT Username
-      FROM dbo.Users
-      WHERE Username IS NOT NULL
-      GROUP BY Username
-      HAVING COUNT(*) > 1
-    )
+    DECLARE @HasDuplicateUsername INT = 0;
+    DECLARE @CheckDuplicateUsernameSql NVARCHAR(MAX) = N'
+      SELECT @HasDup = CASE WHEN EXISTS (
+        SELECT Username
+        FROM dbo.Users
+        WHERE Username IS NOT NULL
+        GROUP BY Username
+        HAVING COUNT(*) > 1
+      ) THEN 1 ELSE 0 END;';
+
+    EXEC sys.sp_executesql
+      @CheckDuplicateUsernameSql,
+      N'@HasDup INT OUTPUT',
+      @HasDup = @HasDuplicateUsername OUTPUT;
+
+    IF @HasDuplicateUsername = 0
     BEGIN
-      CREATE UNIQUE INDEX UX_Users_Username ON dbo.Users(Username) WHERE Username IS NOT NULL;
+      EXEC sys.sp_executesql N'CREATE UNIQUE INDEX UX_Users_Username ON dbo.Users(Username) WHERE Username IS NOT NULL;';
     END
     ELSE
     BEGIN
@@ -162,18 +177,27 @@ BEGIN TRY
     END
   END
 
-  IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'UX_Users_Phone' AND object_id = OBJECT_ID('dbo.Users'))
+  IF COL_LENGTH('dbo.Users', 'Phone') IS NOT NULL
+     AND NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'UX_Users_Phone' AND object_id = OBJECT_ID('dbo.Users'))
   BEGIN
-    IF COL_LENGTH('dbo.Users', 'Phone') IS NOT NULL
-       AND NOT EXISTS (
-          SELECT Phone
-          FROM dbo.Users
-          WHERE Phone IS NOT NULL
-          GROUP BY Phone
-          HAVING COUNT(*) > 1
-       )
+    DECLARE @HasDuplicatePhone INT = 0;
+    DECLARE @CheckDuplicatePhoneSql NVARCHAR(MAX) = N'
+      SELECT @HasDup = CASE WHEN EXISTS (
+        SELECT Phone
+        FROM dbo.Users
+        WHERE Phone IS NOT NULL
+        GROUP BY Phone
+        HAVING COUNT(*) > 1
+      ) THEN 1 ELSE 0 END;';
+
+    EXEC sys.sp_executesql
+      @CheckDuplicatePhoneSql,
+      N'@HasDup INT OUTPUT',
+      @HasDup = @HasDuplicatePhone OUTPUT;
+
+    IF @HasDuplicatePhone = 0
     BEGIN
-      CREATE UNIQUE INDEX UX_Users_Phone ON dbo.Users(Phone) WHERE Phone IS NOT NULL;
+      EXEC sys.sp_executesql N'CREATE UNIQUE INDEX UX_Users_Phone ON dbo.Users(Phone) WHERE Phone IS NOT NULL;';
     END
     ELSE
     BEGIN
@@ -181,16 +205,26 @@ BEGIN TRY
     END
   END
 
-  IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'UX_AuthProviders_Provider' AND object_id = OBJECT_ID('dbo.AuthProviders'))
+  IF OBJECT_ID('dbo.AuthProviders', 'U') IS NOT NULL
+     AND NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'UX_AuthProviders_Provider' AND object_id = OBJECT_ID('dbo.AuthProviders'))
   BEGIN
-    IF NOT EXISTS (
-      SELECT ProviderType, ProviderSubject
-      FROM dbo.AuthProviders
-      GROUP BY ProviderType, ProviderSubject
-      HAVING COUNT(*) > 1
-    )
+    DECLARE @HasDuplicateProvider INT = 0;
+    DECLARE @CheckDuplicateProviderSql NVARCHAR(MAX) = N'
+      SELECT @HasDup = CASE WHEN EXISTS (
+        SELECT ProviderType, ProviderSubject
+        FROM dbo.AuthProviders
+        GROUP BY ProviderType, ProviderSubject
+        HAVING COUNT(*) > 1
+      ) THEN 1 ELSE 0 END;';
+
+    EXEC sys.sp_executesql
+      @CheckDuplicateProviderSql,
+      N'@HasDup INT OUTPUT',
+      @HasDup = @HasDuplicateProvider OUTPUT;
+
+    IF @HasDuplicateProvider = 0
     BEGIN
-      CREATE UNIQUE INDEX UX_AuthProviders_Provider ON dbo.AuthProviders(ProviderType, ProviderSubject);
+      EXEC sys.sp_executesql N'CREATE UNIQUE INDEX UX_AuthProviders_Provider ON dbo.AuthProviders(ProviderType, ProviderSubject);';
     END
     ELSE
     BEGIN
@@ -210,11 +244,20 @@ BEGIN CATCH
   THROW @ErrNum, @ErrMsg, @ErrState;
 END CATCH;
 
--- Post-migration diagnostics
-SELECT TOP 20 UserId, Username, Phone, PhoneVerifiedAt, Role, MustChangePassword
-FROM dbo.Users
-ORDER BY UserId;
+-- Post-migration diagnostics (dynamic to support legacy schemas)
+DECLARE @UserDiagSql NVARCHAR(MAX) = N'SELECT TOP 20 UserId';
+IF COL_LENGTH('dbo.Users', 'Username') IS NOT NULL SET @UserDiagSql += N', Username';
+IF COL_LENGTH('dbo.Users', 'Phone') IS NOT NULL SET @UserDiagSql += N', Phone';
+IF COL_LENGTH('dbo.Users', 'PhoneVerifiedAt') IS NOT NULL SET @UserDiagSql += N', PhoneVerifiedAt';
+IF COL_LENGTH('dbo.Users', 'Role') IS NOT NULL SET @UserDiagSql += N', Role';
+IF COL_LENGTH('dbo.Users', 'MustChangePassword') IS NOT NULL SET @UserDiagSql += N', MustChangePassword';
+SET @UserDiagSql += N' FROM dbo.Users ORDER BY UserId;';
+EXEC sys.sp_executesql @UserDiagSql;
 
-SELECT TOP 20 ProviderId, UserId, ProviderType, ProviderSubject, CreatedAt
-FROM dbo.AuthProviders
-ORDER BY ProviderId;
+IF OBJECT_ID('dbo.AuthProviders', 'U') IS NOT NULL
+BEGIN
+  EXEC sys.sp_executesql N'
+    SELECT TOP 20 ProviderId, UserId, ProviderType, ProviderSubject, CreatedAt
+    FROM dbo.AuthProviders
+    ORDER BY ProviderId;';
+END
