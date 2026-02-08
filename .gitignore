@@ -1,0 +1,30 @@
+# Node
+**/node_modules/
+**/npm-debug.log*
+**/yarn-error.log*
+**/pnpm-debug.log*
+
+# Build outputs
+**/dist/
+**/build/
+**/coverage/
+
+# Vite
+**/.vite/
+
+# Env files
+**/.env
+**/.env.*
+
+# Logs
+**/*.log
+
+# OS files
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# TypeScript
+**/*.tsbuildinfo
