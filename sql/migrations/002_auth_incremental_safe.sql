@@ -32,50 +32,66 @@ BEGIN TRY
   END
 
   -- 3) Best-effort backfill PhoneVerifiedAt when Phone exists and PhoneVerifiedAt is null
+  -- Use dynamic SQL to avoid compile-time binding errors on legacy schemas.
   IF COL_LENGTH('dbo.Users', 'Phone') IS NOT NULL
      AND COL_LENGTH('dbo.Users', 'PhoneVerifiedAt') IS NOT NULL
   BEGIN
-    UPDATE dbo.Users
-    SET PhoneVerifiedAt = COALESCE(PhoneVerifiedAt, CreatedAt, SYSUTCDATETIME())
-    WHERE Phone IS NOT NULL AND PhoneVerifiedAt IS NULL;
+    DECLARE @BackfillPhoneVerifiedSql NVARCHAR(MAX);
+
+    IF COL_LENGTH('dbo.Users', 'CreatedAt') IS NOT NULL
+      SET @BackfillPhoneVerifiedSql = N'
+        UPDATE dbo.Users
+        SET PhoneVerifiedAt = COALESCE(PhoneVerifiedAt, CreatedAt, SYSUTCDATETIME())
+        WHERE Phone IS NOT NULL AND PhoneVerifiedAt IS NULL;';
+    ELSE
+      SET @BackfillPhoneVerifiedSql = N'
+        UPDATE dbo.Users
+        SET PhoneVerifiedAt = COALESCE(PhoneVerifiedAt, SYSUTCDATETIME())
+        WHERE Phone IS NOT NULL AND PhoneVerifiedAt IS NULL;';
+
+    EXEC sys.sp_executesql @BackfillPhoneVerifiedSql;
   END
 
   -- 4) Backfill Username from FullName when available and Username is null
+  -- Dynamic SQL avoids invalid-column compile errors when FullName does not exist.
   IF COL_LENGTH('dbo.Users', 'FullName') IS NOT NULL
      AND COL_LENGTH('dbo.Users', 'Username') IS NOT NULL
   BEGIN
-    ;WITH base AS (
-      SELECT
-        UserId,
-        LEFT(
-          LOWER(
-            REPLACE(
+    DECLARE @BackfillUsernameSql NVARCHAR(MAX) = N'
+      ;WITH base AS (
+        SELECT
+          UserId,
+          LEFT(
+            LOWER(
               REPLACE(
                 REPLACE(
-                  REPLACE(LTRIM(RTRIM(FullName)), ' ', '_'),
-                '.', ''),
-              ',', ''),
-            '-', '_')
-          ),
-          40
-        ) AS BaseUsername
-      FROM dbo.Users
-      WHERE Username IS NULL
-        AND FullName IS NOT NULL
-        AND LTRIM(RTRIM(FullName)) <> ''
-    ), ranked AS (
-      SELECT
-        UserId,
-        BaseUsername,
-        ROW_NUMBER() OVER (PARTITION BY BaseUsername ORDER BY UserId) AS rn
-      FROM base
-      WHERE BaseUsername IS NOT NULL AND BaseUsername <> ''
-    )
-    UPDATE u
-    SET Username = LEFT(CASE WHEN r.rn = 1 THEN r.BaseUsername ELSE CONCAT(r.BaseUsername, '_', r.rn) END, 64)
-    FROM dbo.Users u
-    JOIN ranked r ON r.UserId = u.UserId
-    WHERE u.Username IS NULL;
+                  REPLACE(
+                    REPLACE(LTRIM(RTRIM(FullName)), '' '', ''_''),
+                  ''.'', ''''),
+                '','', ''''),
+              ''-'', ''_'')
+            ),
+            40
+          ) AS BaseUsername
+        FROM dbo.Users
+        WHERE Username IS NULL
+          AND FullName IS NOT NULL
+          AND LTRIM(RTRIM(FullName)) <> ''''
+      ), ranked AS (
+        SELECT
+          UserId,
+          BaseUsername,
+          ROW_NUMBER() OVER (PARTITION BY BaseUsername ORDER BY UserId) AS rn
+        FROM base
+        WHERE BaseUsername IS NOT NULL AND BaseUsername <> ''''
+      )
+      UPDATE u
+      SET Username = LEFT(CASE WHEN r.rn = 1 THEN r.BaseUsername ELSE CONCAT(r.BaseUsername, ''_'', r.rn) END, 64)
+      FROM dbo.Users u
+      JOIN ranked r ON r.UserId = u.UserId
+      WHERE u.Username IS NULL;';
+
+    EXEC sys.sp_executesql @BackfillUsernameSql;
   END
 
   -- 5) Ensure AuthProviders exists (create if missing)
