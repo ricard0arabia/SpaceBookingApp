@@ -46,10 +46,20 @@ const createLocalUser = async ({ username, passwordHash, phone, email }: { usern
   executeTransaction(async (connection) => {
     const inserted = await execSql<{ UserId: number }>(
       connection,
-      `INSERT INTO Users (Username, PasswordHash, Phone, PhoneVerifiedAt, Email, Role, MustChangePassword)
-       OUTPUT INSERTED.UserId
-       VALUES (@Username, @PasswordHash, @Phone, SYSUTCDATETIME(), @Email, 'Client', 0)`,
+      `IF COL_LENGTH('dbo.Users', 'FullName') IS NOT NULL
+         BEGIN
+           INSERT INTO Users (FullName, Username, PasswordHash, Phone, PhoneVerifiedAt, Email, Role, MustChangePassword)
+           OUTPUT INSERTED.UserId
+           VALUES (@FullName, @Username, @PasswordHash, @Phone, SYSUTCDATETIME(), @Email, 'Client', 0)
+         END
+       ELSE
+         BEGIN
+           INSERT INTO Users (Username, PasswordHash, Phone, PhoneVerifiedAt, Email, Role, MustChangePassword)
+           OUTPUT INSERTED.UserId
+           VALUES (@Username, @PasswordHash, @Phone, SYSUTCDATETIME(), @Email, 'Client', 0)
+         END`,
       [
+        { name: "FullName", type: TYPES.NVarChar, value: username },
         { name: "Username", type: TYPES.NVarChar, value: username },
         { name: "PasswordHash", type: TYPES.NVarChar, value: passwordHash },
         { name: "Phone", type: TYPES.NVarChar, value: phone },
@@ -73,10 +83,22 @@ const findOrCreateGoogleUser = async ({ googleSubject, email }: { googleSubject:
   }
 
   const rows = await execute<{ UserId: number }>(
-    `INSERT INTO Users (Username, PasswordHash, Phone, PhoneVerifiedAt, Email, Role, MustChangePassword)
-     OUTPUT INSERTED.UserId
-     VALUES (NULL, NULL, NULL, NULL, @Email, 'Client', 0)`,
-    [{ name: "Email", type: TYPES.NVarChar, value: email }]
+    `IF COL_LENGTH('dbo.Users', 'FullName') IS NOT NULL
+       BEGIN
+         INSERT INTO Users (FullName, Username, PasswordHash, Phone, PhoneVerifiedAt, Email, Role, MustChangePassword)
+         OUTPUT INSERTED.UserId
+         VALUES (@FullName, NULL, NULL, NULL, NULL, @Email, 'Client', 0)
+       END
+     ELSE
+       BEGIN
+         INSERT INTO Users (Username, PasswordHash, Phone, PhoneVerifiedAt, Email, Role, MustChangePassword)
+         OUTPUT INSERTED.UserId
+         VALUES (NULL, NULL, NULL, NULL, @Email, 'Client', 0)
+       END`,
+    [
+      { name: "FullName", type: TYPES.NVarChar, value: email ?? `google_user_${Date.now()}` },
+      { name: "Email", type: TYPES.NVarChar, value: email }
+    ]
   );
 
   await execute(`INSERT INTO AuthProviders (UserId, ProviderType, ProviderSubject) VALUES (@UserId, 'google', @Subject)`, [
