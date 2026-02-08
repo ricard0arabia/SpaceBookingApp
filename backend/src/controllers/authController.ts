@@ -130,6 +130,8 @@ export const googleCallback = (req: Request, res: Response, next: NextFunction) 
 
   passport.authenticate("google", { failureRedirect: "/login" })(req, res, () => {
     req.session.oauthState = undefined;
-    res.redirect(process.env.OAUTH_SUCCESS_REDIRECT ?? "http://localhost:5173/");
+    const target = new URL(process.env.OAUTH_SUCCESS_REDIRECT ?? "http://localhost:5173/");
+    target.searchParams.set("oauth", "1");
+    res.redirect(target.toString());
   });
 };

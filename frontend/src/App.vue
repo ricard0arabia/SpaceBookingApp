@@ -32,10 +32,11 @@
 
 <script setup lang="ts">
 import { onMounted, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "./stores/useAuthStore";
 import courtBackground from "./assets/court.svg";
 
+const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
 
@@ -44,9 +45,30 @@ const logout = async () => {
   router.push("/");
 };
 
+const hydrateFromOAuthRedirect = async () => {
+  if (route.query.oauth !== "1") {
+    return;
+  }
+
+  await auth.hydrate();
+  const query = { ...route.query };
+  delete query.oauth;
+  router.replace({ path: route.path, query });
+};
+
 onMounted(async () => {
   await auth.hydrate();
+  await hydrateFromOAuthRedirect();
 });
+
+watch(
+  () => route.query.oauth,
+  async (value) => {
+    if (value === "1") {
+      await hydrateFromOAuthRedirect();
+    }
+  }
+);
 
 watch(
   () => auth.me,
